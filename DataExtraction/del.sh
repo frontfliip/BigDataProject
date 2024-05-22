@@ -1,0 +1,2 @@
+docker stop multi_websocket_to_kafka_container
+docker rm multi_websocket_to_kafka_container
