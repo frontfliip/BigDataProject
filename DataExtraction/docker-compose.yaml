@@ -1,10 +1,23 @@
 version: '3'
 
 services:
-  spark:
-    image: docker.io/bitnami/spark:3
+
+  cassandra:
+    image: cassandra:latest
+    container_name: cassandra
+    ports:
+      - "9042:9042"
+    healthcheck:
+      test: [ "CMD", "cqlsh", "--execute", "DESCRIBE KEYSPACES;" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     networks:
       - project-net
+
+  spark:
+    image: docker.io/bitnami/spark:3
+    container_name: spark
     environment:
       - SPARK_MODE=master
       - SPARK_RPC_AUTHENTICATION_ENABLED=no
@@ -13,13 +26,14 @@ services:
       - SPARK_SSL_ENABLED=no
     ports:
       - '8080:8080'
+    networks:
+      - project-net
     volumes:
       - ./:/opt/app/
 
   spark-worker:
     image: docker.io/bitnami/spark:3
-    networks:
-      - project-net
+    container_name: spark-worker
     environment:
       - SPARK_MODE=worker
       - SPARK_MASTER_URL=spark://spark:7077
@@ -29,8 +43,11 @@ services:
       - SPARK_RPC_ENCRYPTION_ENABLED=no
       - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
       - SPARK_SSL_ENABLED=no
+    networks:
+      - project-net
     volumes:
       - ./:/opt/app/
+
   zookeeper:
     image: bitnami/zookeeper:latest
     container_name: zookeeper
@@ -44,11 +61,15 @@ services:
   kafka:
     image: bitnami/kafka:latest
     container_name: kafka
-    networks:
-      - project-net
     environment:
       KAFKA_ADVERTISED_HOST_NAME: kafka
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+    ports:
+      - "9092:9092"
+    depends_on:
+      - zookeeper
+    networks:
+      - project-net
 
 networks:
   project-net:
