@@ -1,14 +1,27 @@
 import asyncio
 import json
+import time
 
-import websocets
-from fastapi import websockets
+import websockets
 from kafka import KafkaProducer
+from kafka.errors import NoBrokersAvailable
 
-producer = KafkaProducer(
-    bootstrap_servers='kafka:9092',
-    value_serializer=lambda x: json.dumps(x).encode('utf-8')
-)
+
+def create_kafka_producer(attempts=15, wait_time=5):
+    for _ in range(attempts):
+        try:
+            producer = KafkaProducer(bootstrap_servers='kafka:9092',
+                                     value_serializer=lambda x: json.dumps(x).encode('utf-8'),
+                                     api_version=(0, 10, 1)
+                                     )
+            print("Storage Producer created", flush=True)
+            break
+        except NoBrokersAvailable:
+            time.sleep(wait_time)
+    return producer
+
+
+producer = create_kafka_producer()
 
 connections = [
     {

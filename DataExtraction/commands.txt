@@ -1,0 +1,20 @@
+docker-compose build
+docker-compose up -d
+
+#Open new terminal
+.\create_tables.sh
+
+docker exec -it cassandra cqlsh
+use bitmex_stream_data;
+select * from ad_hoc_data;
+
+.\run.sh
+# Check run.sh
+docker run -it --rm --network project-net -e KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper-server:2181 bitnami/kafka:latest kafka-console-consumer.sh --bootstrap-server kafka:9092 --topic crypto
+
+#Start Transformation
+docker run --rm -it --network project-net --name spark-submit-1 -v .:/opt/app bitnami/spark:3 /bin/bash
+cd /opt/app/DataExtraction
+spark-submit --conf spark.jars.ivy=/opt/app --packages "org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.0,com.datastax.spark:spark-cassandra-connector_2.12:3.0.0" --master spark://spark-worker:7077 --deploy-mode client --executor-memory 1G --total-executor-cores 2 transform.py
+
+
