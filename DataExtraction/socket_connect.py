@@ -1,8 +1,6 @@
 import asyncio
 import json
-
-import websocets
-from fastapi import websockets
+import websockets
 from kafka import KafkaProducer
 
 producer = KafkaProducer(
@@ -45,16 +43,21 @@ connections = [
 
 
 async def connect_to_websocket(uri, message, tag):
-    async with websockets.connect(uri) as websocket:
-        await websocket.send(json.dumps(message))
+    while True:  # Keep trying to connect/reconnect
+        try:
+            async with websockets.connect(uri) as websocket:
+                await websocket.send(json.dumps(message))
 
-        async for response in websocket:
-            try:
-                data = json.loads(response)
-                tagged_message = {"tag": tag, "data": data}
-                producer.send("crypto", tagged_message)
-            except json.JSONDecodeError:
-                pass  # In case an empty message occurs
+                async for response in websocket:
+                    try:
+                        data = json.loads(response)
+                        tagged_message = {"tag": tag, "data": data}
+                        producer.send("crypto", tagged_message)
+                    except json.JSONDecodeError:
+                        pass  # In case an empty message occurs
+        except:
+            print(f"WebSocket connection failed: retrying in 5 seconds...")
+            await asyncio.sleep(5)
 
 
 async def main():

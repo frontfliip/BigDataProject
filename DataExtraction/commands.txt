@@ -1,0 +1,8 @@
+docker run --rm -it --network project-net --name spark-submit -v .:/opt/app bitnami/spark:3 /bin/bash
+cd /opt/app
+spark-submit  --conf spark.jars.ivy=/opt/app --packages "org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.0" --master spark://spark:7077 --deploy-mode client --executor-memory 1G --total-executor-cores 2 transform_1.py
+
+docker exec -it cassandra bash
+cqlsh
+USE crypto;
+SELECT * FROM precomputed;
