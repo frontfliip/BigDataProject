@@ -1,10 +1,14 @@
-CREATE KEYSPACE IF NOT EXISTS crypto WITH REPLICATION = {'class' : 'SimpleStrategy', 'replication_factor' : 1 };
-USE crypto;
+CREATE KEYSPACE IF NOT EXISTS bitmex_stream_data WITH replication = {'class': 'SimpleStrategy', 'replication_factor' : 1};
+USE bitmex_stream_data;
 
-CREATE TABLE IF NOT EXISTS precomputed(
-    coin text,
-    hour_timestamp text,
-    total_volume int,
-    num_trades int,
-    PRIMARY KEY ((coin), hour_timestamp)
+CREATE TABLE IF NOT EXISTS ad_hoc_data
+(
+    symbol       text,
+    trade_count  int,
+    trade_volume float,
+    start_time   timestamp,
+    end_time     timestamp,
+    PRIMARY KEY (symbol, start_time, end_time)
 );
+
+DESCRIBE TABLES;

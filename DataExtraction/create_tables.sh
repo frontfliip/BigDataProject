@@ -5,7 +5,7 @@ while [ "$(docker inspect --format='{{.State.Health.Status}}' cassandra)" != "he
   sleep 10
 done
 
-docker exec -i cassandra cqlsh -e "$(cat ddl.cql)"
+docker exec -i cassandra cqlsh -e "$(cat DataExtraction/ddl.cql)"
 
 echo "Tables created!"
 sleep 10
