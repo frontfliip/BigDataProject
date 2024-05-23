@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS ad_hoc_data
     trade_volume float,
     start_time   timestamp,
     end_time     timestamp,
-    PRIMARY KEY (symbol, end_time)
+    PRIMARY KEY (symbol, start_time, end_time)
 );
 
 DESCRIBE TABLES;
