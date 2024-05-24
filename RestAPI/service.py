@@ -7,9 +7,8 @@ logging.basicConfig(level=logging.DEBUG)
 
 class Service:
     def __init__(self):
-        print("Service is created", flush=True)
         self.repository = Repository()
-        self.pr()
+        print("Service is created", flush=True)
 
     def n_transactions_for_crypto(self, cryptocurrency, minutes):
         return self.repository.number_of_transaction_for_cryptocurrency_n_last_min(cryptocurrency, minutes)
@@ -22,10 +21,3 @@ class Service:
 
     def get_check(self):
         return self.repository.get_check()
-
-    def pr(self):
-        logging.info("Service is created")
-
-    def get_check2(self):
-        self.pr()
-        return self.repository.pr()

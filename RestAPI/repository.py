@@ -25,14 +25,14 @@ class Repository:
         #     .getOrCreate()
 
     def number_of_transaction_for_cryptocurrency_n_last_min(self, symbol, minutes):
-        print("Start n min", flush=True)
+        print(f"Start transactions for {symbol} in last {minutes} min", flush=True)
         now = datetime.utcnow()
         end_time = now.replace(second=0, microsecond=0)
-        print(end_time)
+        print(f"End time {end_time}", flush=True)
         start_time = end_time - timedelta(minutes=minutes)
-        print(start_time)
+        print(f"Start time {start_time}", flush=True)
         end_time -= timedelta(minutes=1)
-        print(end_time)
+        print(f"End time excluding current minute {end_time}", flush=True)
         query = """
             SELECT symbol, SUM(trade_count) as total_trades, SUM(trade_volume) as total_volume
             FROM ad_hoc_data
@@ -42,11 +42,11 @@ class Repository:
         """
 
         rows = self.session.execute(query, (symbol, start_time, end_time))
-        print(rows, flush=True)
-        logging.info(rows)
-
-        for row in rows:
-            return {"symbol": symbol, "total_trades": row.total_trades}
+        if rows:
+            for row in rows:
+                return {"symbol": symbol, "total_trades": row.total_trades}
+        else:
+            return {"Message": f"No information about {symbol} in the database..."}
 
     # def get_top_n_cryptocurrencies_per_hour(self, top_n=5):
     #     now = datetime.utcnow()
@@ -90,26 +90,16 @@ class Repository:
         """
 
         rows = self.session.execute(query, (cryptocurrency,))
-        print(rows, flush=True)
-        logging.info(rows)
-        for row in rows:
-            result = {"Buy Price": row.buy_price, "Sell Price": row.sell_price}
-            print(result, flush=True)
-            return result
+        if rows:
+            for row in rows:
+                result = {
+                    "Cryptocurrency": cryptocurrency,
+                    "Buy Price": row.buy_price,
+                    "Sell Price": row.sell_price}
+                print(result, flush=True)
+                return result
+        else:
+            return {"Message": f"No information about {cryptocurrency} in the database..."}
 
     def get_check(self):
-        print(self.host)
-        print({"Response": "COOL"}, flush=True)
-        logging.info({"Response": "COOL"})
-        return {"Response": "COOL"}
-
-    def pr(self):
-        print("Repository is created", flush=True)
-        logging.info("Repository is created")
-        query = """
-            SELECT *
-            FROM currency_price_data;
-        """
-        rows = self.session.execute(query)
-        for row in rows:
-            print(row, flush=True)
+        return {"Message": "API is working horey!"}
