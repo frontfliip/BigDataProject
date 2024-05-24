@@ -17,7 +17,6 @@ class Repository:
         self.keyspace = keyspace
         cluster = Cluster([self.host], port=self.port)
         self.session = cluster.connect(self.keyspace)
-        self.pr()
         # self.spark = SparkSession.builder \
         #     .appName("TopCryptocurrencies") \
         #     .config("spark.cassandra.connection.host", self.host) \
@@ -34,11 +33,11 @@ class Repository:
         end_time -= timedelta(minutes=1)
         print(f"End time excluding current minute {end_time}", flush=True)
         query = """
-            SELECT symbol, SUM(trade_count) as total_trades, SUM(trade_volume) as total_volume
+            SELECT symbol, SUM(total_trades) as total_trades, SUM(trades_volume) as total_volume
             FROM ad_hoc_data
             WHERE symbol = %s
-            AND start_time >= %s
-            AND start_time <= %s;
+            AND timestamp >= %s
+            AND timestamp <= %s;
         """
 
         rows = self.session.execute(query, (symbol, start_time, end_time))
