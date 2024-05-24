@@ -2,14 +2,13 @@ docker-compose build
 docker-compose up -d
 
 #Open new terminal
-.\create_tables.sh
+.\DataExtraction\create_tables.sh
 
 docker exec -it cassandra cqlsh
 use bitmex_stream_data;
 select * from ad_hoc_data;
 
-.\run.sh
-# Check run.sh
+# Check extraction in kafka
 docker run -it --rm --network project-net -e KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper-server:2181 bitnami/kafka:latest kafka-console-consumer.sh --bootstrap-server kafka:9092 --topic crypto
 
 #Start Transformation
