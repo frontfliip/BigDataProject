@@ -3,12 +3,18 @@ USE bitmex_stream_data;
 
 CREATE TABLE IF NOT EXISTS ad_hoc_data
 (
-    symbol       text,
-    trade_count  int,
-    trade_volume float,
-    start_time   timestamp,
-    end_time     timestamp,
-    PRIMARY KEY (symbol, start_time, end_time)
+    symbol text,
+    total_trades int,
+    trades_volume double,
+    timestamp timestamp,
+    PRIMARY KEY (symbol, timestamp)
 );
 
-DESCRIBE TABLES;
+CREATE TABLE IF NOT EXISTS precomputed_data
+(
+    symbol text,
+    total_trades int,
+    trades_volume double,
+    timestamp timestamp,
+    PRIMARY KEY (symbol, timestamp)
+);

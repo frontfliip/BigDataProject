@@ -70,9 +70,10 @@ services:
       - zookeeper
     networks:
       - project-net
+
   socket:
     build:
-      context: .
+      context: DataExtraction
     networks:
       - project-net
     container_name: socket

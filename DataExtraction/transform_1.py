@@ -1,92 +1,14 @@
-# from pyspark.sql import SparkSession
-# from pyspark.sql.functions import from_json, col, window, current_timestamp, hour, expr
-# from pyspark.sql.types import StructType, StringType, DoubleType, LongType, IntegerType
-#
-# # Initialize Spark Session
-# spark = SparkSession \
-#     .builder \
-#     .appName("CryptoDataProcessor") \
-#     .getOrCreate()
-#
-# # Define schema for incoming data
-# schema = StructType() \
-#     .add("tag", StringType()) \
-#     .add("data", StructType() \
-#          .add("table", StringType()) \
-#          .add("action", StringType()) \
-#          .add("data", StringType()))
-#
-# # Read from Kafka
-# df = spark \
-#     .readStream \
-#     .format("kafka") \
-#     .option("kafka.bootstrap.servers", "kafka:9092") \
-#     .option("subscribe", "crypto") \
-#     .load()
-#
-# # Select and parse the data
-# df_parsed = df.selectExpr("CAST(value AS STRING) as json") \
-#     .select(from_json("json", schema).alias("data")) \
-#     .select("data.*")
-#
-# # Filter out 'instrument' table messages
-# df_filtered = df_parsed.filter("data.table != 'instrument'")
-#
-# # Extract necessary fields (assuming transaction ID from `data.data`)
-# transaction_schema = StructType() \
-#     .add("symbol", StringType()) \
-#     .add("id", LongType()) \
-#     .add("side", StringType()) \
-#     .add("size", IntegerType()) \
-#     .add("price", DoubleType()) \
-#     .add("timestamp", StringType())
-#
-# df_transactions = df_filtered.withColumn("transaction", from_json("data.data", transaction_schema)) \
-#     .select("tag", "transaction.*")
-#
-# # Aggregate by tag, hour, and count transactions
-# df_aggregated = df_transactions \
-#     .withColumn("timestamp", col("timestamp").cast("timestamp")) \
-#     .withColumn("hour", hour("timestamp")) \
-#     .groupBy("tag", "hour") \
-#     .count()
-#
-# # Filter based on the last 6 hours excluding the last hour
-# current_hour = hour(current_timestamp())
-# df_result = df_aggregated.filter((col("hour") < current_hour) & (col("hour") >= current_hour - 6))
-#
-# # Write output (console for demonstration; in production, consider using a database or file system)
-# query = df_result \
-#     .writeStream \
-#     .outputMode("complete") \
-#     .format("console") \
-#     .start()
-#
-# query.awaitTermination()
-
-
-
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, sum as sum_agg, from_json, to_timestamp, window, count, explode
 from pyspark.sql.types import StructType, StructField, StringType, ArrayType, DoubleType, IntegerType, TimestampType
 
 # # Create a Spark Session
-# spark = SparkSession.builder \
-#     .appName("CryptoTradeAggregator") \
-#     .config("spark.cassandra.connection.host", "Cassandra_IP_Address") \
-#     .config("spark.cassandra.connection.port", "9042") \
-#     .config("spark.sql.extensions", "com.datastax.spark.connector.CassandraSparkExtensions") \
-#     .config("spark.cassandra.auth.username", "username") \
-#     .config("spark.cassandra.auth.password", "password") \
-#     .getOrCreate()
-
-spark = SparkSession \
-    .builder \
-    .appName("Spark to Cassandra Streaming") \
-    .config("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.0,com.datastax.spark:spark-cassandra-connector_2.12:3.0.0") \
-    .config("spark.sql.streaming.checkpointLocation", "/opt/app/spark-checkpoint") \
+spark = SparkSession.builder \
+    .appName("SparkToCassandraStreaming") \
     .config("spark.cassandra.connection.host", "cassandra") \
+    .config("spark.cassandra.connection.port", "9042") \
     .getOrCreate()
+
 
 # Define the schema for parsing JSON from Kafka
 schema = StructType([
@@ -104,23 +26,6 @@ schema = StructType([
         ])))
     ]))
 ])
-
-# Define the schema for parsing JSON from Kafka
-# schema = StructType([
-#     StructField("tag", StringType()),
-#     StructField("data", StructType([
-#         StructField("table", StringType()),
-#         StructField("action", StringType()),
-#         StructField("data", ArrayType(StructType([
-#             StructField("symbol", StringType()),
-#             StructField("id", IntegerType()),
-#             StructField("side", StringType()),
-#             StructField("size", IntegerType()),
-#             StructField("price", DoubleType()),
-#             StructField("timestamp", TimestampType())
-#         ])))
-#     ]))
-# ])
 
 
 # Read data from Kafka
@@ -142,15 +47,14 @@ filtered_data = df_parsed.filter(
 )
 
 # Exploding nested array and preparing data
-df_flattened = df_parsed.select(
-    col("tag").alias("coin"),
+df_flattened = filtered_data.select(
+    col("data.data.symbol").alias("symbol"),
     explode(col("data.data")).alias("trade_details")  # Exploding the array to create individual rows
 )
 
 # Now you can select individual fields from the exploded "trade_details" which is now a struct
 df_trades = df_flattened.select(
-    "coin",
-    col("trade_details.symbol"),
+    col("trade_details.symbol").alias("symbol"),
     col("trade_details.id"),
     col("trade_details.side"),
     col("trade_details.size"),
@@ -162,38 +66,54 @@ df_trades = df_trades.filter(col("size").isNotNull() & col("price").isNotNull())
 
 
 # Adding watermark to handle late data
-df_trades = df_trades.withWatermark("timestamp", "10 minutes")
+df_trades = df_trades.withWatermark("timestamp", "1 minute")
 # Aggregating data by coin and hourly windows
 df_aggregated = df_trades.groupBy(
-    "coin",
-    window("timestamp", "1 hour").alias("hour_window")  # Tumbling window of 1 hour
+    "symbol",
+    window("timestamp", "1 minutes").alias("minute_window")  # Tumbling window of 1 hour
 ).agg(
     sum_agg(col("size") * col("price")).alias("total_volume"),  # Calculate total volume
-    count("*").alias("num_trades")  # Count the number of trades
+    count("*").alias("total_trades")  # Count the number of trades
 ).select(
-    "coin",
-    col("hour_window.start").alias("hour_timestamp"),  # The start of the hour window
-    "total_volume",
-    "num_trades"  # The number of trades in each window
+    col("symbol").cast("string"),
+    col("total_trades").alias("total_trades").cast("int"),
+    col("total_volume").alias("trades_volume").cast("double"),
+    col("minute_window.start").alias("timestamp").cast("timestamp")
 )
 
-# Write the aggregated data to console for debugging
+df_1_aggregated = df_trades.groupBy(
+    "symbol",
+    window("timestamp", "5 minutes").alias("minute_window")
+).agg(
+    sum_agg(col("size") * col("price")).alias("total_volume"),
+    count("*").alias("total_trades")
+).select(
+    col("symbol").cast("string"),
+    col("total_trades").alias("total_trades").cast("int"),
+    col("total_volume").alias("trades_volume").cast("double"),
+    col("minute_window.start").alias("timestamp").cast("timestamp")
+)
+
 query = df_aggregated.writeStream \
+    .foreachBatch(lambda batch_df, batch_id: batch_df.write \
+                  .format("org.apache.spark.sql.cassandra") \
+                  .mode("append") \
+                  .options(table="ad_hoc_data", keyspace="bitmex_stream_data") \
+                  .save()) \
     .outputMode("complete") \
-    .format("console") \
-    .option("truncate", "false") \
+    .start()
+
+query_1 = df_1_aggregated.writeStream \
+    .foreachBatch(lambda batch_df, batch_id: batch_df.write \
+                  .format("org.apache.spark.sql.cassandra") \
+                  .mode("append") \
+                  .options(table="precomputed_data", keyspace="bitmex_stream_data") \
+                  .save()) \
+    .outputMode("complete") \
     .start()
 
 query.awaitTermination()
-# Write the aggregated data to Cassandra
-# df_aggregated.writeStream \
-#     .format("org.apache.spark.sql.cassandra") \
-#     .option("keyspace", "crypto") \
-#     .option("table", "trading_info") \
-#     .option("checkpointLocation", "/path/to/checkpoint/dir") \
-#     .outputMode("complete") \
-#     .start() \
-#     .awaitTermination()
+query_1.awaitTermination()
 
 #
 # |coin|hour_timestamp     |total_volume        |num_trades|
