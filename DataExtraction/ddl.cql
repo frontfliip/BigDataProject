@@ -11,4 +11,13 @@ CREATE TABLE IF NOT EXISTS ad_hoc_data
     PRIMARY KEY (symbol, start_time, end_time)
 );
 
+CREATE TABLE IF NOT EXISTS currency_price_data
+(
+    symbol     text,
+    time       timestamp,
+    buy_price  float,
+    sell_price float,
+    PRIMARY KEY (symbol, time)
+) WITH CLUSTERING ORDER BY (time DESC);
+
 DESCRIBE TABLES;

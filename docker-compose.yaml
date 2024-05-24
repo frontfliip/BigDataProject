@@ -70,15 +70,17 @@ services:
       - zookeeper
     networks:
       - project-net
+
   socket:
     build:
       context: .
-    networks:
-      - project-net
+      dockerfile: DataExtraction/Dockerfile
     container_name: socket
     depends_on:
       cassandra:
         condition: service_healthy
+    networks:
+      - project-net
 
 networks:
   project-net:
