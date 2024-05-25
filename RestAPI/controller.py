@@ -24,7 +24,7 @@ def number_of_transaction_for_cryptocurrency_n_last_min(cryptocurrency: str, min
     return jsonify(result), code
 
 
-@app.route('/trades/hour', methods=['GET'])
+@app.route('/trades/hour/<int:n>', methods=['GET'])
 def get_top_n_cryptocurrencies_per_hour(n):
     result = service.get_top_n_cryptocurrencies_per_hour(n)
     code = 200 if "Message" not in result.keys() else 404
