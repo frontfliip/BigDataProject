@@ -29,12 +29,6 @@ connections = [
         "tag": "sol"
     },
     {
-        "uri": "wss://www.bitmex.com/realtimeWeb?heartbeat=1&_primuscb=O-XsYL8",
-        "message": {"op": "subscribe",
-                    "args": ["instrument:CONTRACTS", "liquidation", "orderBookL2_25:AEVOUSDT", "trade:AEVOUSDT"]},
-        "tag": "aevo"
-    },
-    {
         "uri": "wss://www.bitmex.com/realtimeWeb?heartbeat=1&_primuscb=O-XtgXT",
         "message": {"op": "subscribe",
                     "args": ["instrument:CONTRACTS", "liquidation", "orderBookL2_25:DOGEUSDT", "trade:DOGEUSDT"]},

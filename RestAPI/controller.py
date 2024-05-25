@@ -7,7 +7,6 @@ service = Service()
 @app.route('/<cryptocurrency>/trades/<int:minutes>', methods=['GET'])
 def number_of_transaction_for_cryptocurrency_n_last_min(cryptocurrency: str, minutes: int):
     result = service.n_transactions_for_crypto(cryptocurrency, minutes)
-
     code = 200 if "Message" not in result.keys() else 404
     return jsonify(result), code
 

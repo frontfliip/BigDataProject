@@ -3,10 +3,8 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 from cassandra.cluster import Cluster
-import pytz
 
 logging.basicConfig(level=logging.DEBUG)
-
 
 class Repository:
 
@@ -18,7 +16,6 @@ class Repository:
         self.session = cluster.connect(self.keyspace)
 
     def number_of_transaction_for_cryptocurrency_n_last_min(self, symbol, minutes):
-
         print(f"Start transactions for {symbol} in last {minutes} min", flush=True)
         now = datetime.utcnow()
         end_time = now.replace(second=0, microsecond=0)
@@ -42,10 +39,10 @@ class Repository:
         else:
             return {"Message": f"No information about {symbol} in the database..."}
 
-    def get_top_n_cryptocurrencies_per_hour(self, top_n=5):
+    def get_top_n_cryptocurrencies_per_hour(self, top_n=4):
 
         data = []
-        top_n = min(top_n, 5)
+        top_n = min(top_n, 4)
         columns = ['cryptocurrency', 'total_volume']
 
         now = datetime.utcnow()
@@ -58,7 +55,7 @@ class Repository:
         WHERE symbol = %s 
         AND timestamp > %s;
 """
-        cryptocurrency_list = ["BTCUSD", "ETHUSD", "SOLUSD", "AEVOUSD", "DOGEUSD"]
+        cryptocurrency_list = ["XBTUSD", "ETHUSD", "SOLUSD", "DOGEUSD"]
 
         for cryptocurrency in cryptocurrency_list:
             result_proxy = self.session.execute(query, (cryptocurrency, start_time))
@@ -106,28 +103,24 @@ class Repository:
 
     def get_agg_transactions(self):
         now = datetime.utcnow()
-        end_time = now.replace(minute=0, second=0, microsecond=0)  # Previous hour
+        end_time = now.replace(minute=0, second=0, microsecond=0)
         start_time = end_time - timedelta(hours=6)
 
-        # Execute the query
         rows = self.session.execute(
             "SELECT * FROM precomputed_data WHERE timestamp >= %s AND timestamp < %s ALLOW FILTERING",
             [start_time, end_time])
 
-        # Process the data to aggregate over hourly intervals
         result = {}
         for row in rows:
             symbol = row.symbol
             timestamp = row.timestamp
             total_trades = row.total_trades
 
-            # Use timestamp as-is for aggregation since it's already rounded to the hour
             if (symbol, timestamp) not in result:
                 result[(symbol, timestamp)] = 0
 
             result[(symbol, timestamp)] += total_trades
 
-        # Format the result for output
         total_trades_statistics = [
             {'symbol': symbol, 'hour_start': hour_start, 'total_trades': total_trades}
             for (symbol, hour_start), total_trades in result.items()
@@ -135,30 +128,25 @@ class Repository:
         return total_trades_statistics
 
     def get_agg_volume(self):
-        # Calculate start and end times
         now = datetime.utcnow()
-        end_time = now.replace(minute=0, second=0, microsecond=0)  # Previous hour
+        end_time = now.replace(minute=0, second=0, microsecond=0)
         start_time = end_time - timedelta(hours=6)
 
-        # Execute the query
         rows = self.session.execute(
             "SELECT * FROM precomputed_data WHERE timestamp >= %s AND timestamp < %s ALLOW FILTERING",
             [start_time, end_time])
 
-        # Process the data to aggregate over hourly intervals
         result = {}
         for row in rows:
             symbol = row.symbol
             timestamp = row.timestamp
             trades_volume = row.trades_volume
 
-            # Use timestamp as-is for aggregation since it's already rounded to the hour
             if (symbol, timestamp) not in result:
                 result[(symbol, timestamp)] = 0.0
 
             result[(symbol, timestamp)] += trades_volume
 
-        # Format the result for output
         trades_volume_statistics = [
             {'symbol': symbol, 'hour_start': hour_start, 'trades_volume': trades_volume}
             for (symbol, hour_start), trades_volume in result.items()
@@ -168,15 +156,13 @@ class Repository:
 
     def total_agg_stats(self):
         now = datetime.utcnow()
-        end_time = now.replace(minute=0, second=0, microsecond=0)  # Previous hour
+        end_time = now.replace(minute=0, second=0, microsecond=0)
         start_time = end_time - timedelta(hours=12)
 
-        # Execute the query
         rows = self.session.execute(
             "SELECT * FROM precomputed_data WHERE timestamp >= %s AND timestamp < %s ALLOW FILTERING",
             [start_time, end_time])
 
-        # Process the data to aggregate over hourly intervals
         result = {}
         for row in rows:
             timestamp = row.timestamp
@@ -184,19 +170,15 @@ class Repository:
             trades_volume = row.trades_volume
 
 
-            # Use timestamp as-is for aggregation since it's already rounded to the hour
             if timestamp not in result:
                 result[timestamp] = {'total_trades': 0, 'trades_volume': 0.0}
 
             result[timestamp]['total_trades'] += total_trades
             result[timestamp]['trades_volume'] += trades_volume
 
-
-        # Format the result for output
         aggregated_statistics = [
             {'hour_start': hour_start, 'total_trades': data['total_trades'], 'trades_volume': data['trades_volume']}
             for hour_start, data in result.items()
         ]
-
 
         return aggregated_statistics
