@@ -1,10 +1,24 @@
 docker-compose build
 docker-compose up -d
 
-#Open new terminal
+#create tables
 .\DataExtraction\create_tables.sh
 
-#Start Transformation
+Use this to insert data into currency_price_data table
+use bitmex_stream_data;
+INSERT INTO currency_price_data (symbol, time, buy_price, sell_price)
+VALUES ('DOGEUSD', '2024-05-24 13:01:00', 0.32, 0.33);
+
+INSERT INTO currency_price_data (symbol, time, buy_price, sell_price)
+VALUES ('ETHUSD', '2024-05-24 13:01:00', 4000.0, 4020.0);
+
+INSERT INTO currency_price_data (symbol, time, buy_price, sell_price)
+VALUES ('XBTUSD', '2024-05-24 13:01:00', 50000.0, 50200.0);
+
+INSERT INTO currency_price_data (symbol, time, buy_price, sell_price)
+VALUES ('SOLUSD', '2024-05-24 13:01:00', 50100.0, 50300.0);
+
+#Start Transformation (in another terminal)
 docker run --rm -it --network project-net --name spark-submit -v .:/opt/app bitnami/spark:3 /bin/bash
 cd /opt/app
 spark-submit --conf spark.jars.ivy=/opt/app --packages "org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.0,com.datastax.spark:spark-cassandra-connector_2.12:3.0.0" --master spark://spark:7077 --deploy-mode client --executor-memory 1G --total-executor-cores 2 transform_1.py
@@ -13,19 +27,12 @@ spark-submit --conf spark.jars.ivy=/opt/app --packages "org.apache.spark:spark-s
 .\RestAPI\start_api.sh
 docker run --name rest_api --network project-net -p 1488:1488 restapi
 
-
-
-
-
-
-
-
-
-
 #Stop and Delete REST API
 .\RestAPI\kill_api.sh
 
+#To check data in cassandra container
 docker exec -it cassandra bash
 cqlsh
 use bitmex_stream_data;
-select * from ad_hoc_data;
+select * from ad_hoc_data limit 15;
+select * from precomputed_data limit 15;

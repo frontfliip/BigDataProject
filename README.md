@@ -10,7 +10,7 @@ _In this project our goal was to get stream data from crypto exchange BitMEX usi
 
 ## System Design
 
-![system-design.png](Photoes%2Fsystem-design.png)
+![system-design.png](Photos%2Fsystem-design.png)
 
 **BitMEX** - криптобіржа, з котрої за допомогою Web Socket, ми будемо будувати потік постійних даних, про певні криптовалюти, аби потім їх обробляти та показувати користувачі певну статистику по ній.
 
@@ -69,6 +69,7 @@ The result of this homework is:
 4. Run next command: `docker-compose build` - to load and build Docker Images, create network
 5. Run next command: `docker-compose up -d` - start installation in detached mode.
 6. Run next command: `.\DataExtraction\create_tables.sh` - to create tables in the Cassandra Database
+7. Make sure to run the insert queries from the `commands.txt` file
 7. Open new terminal and run:
     - Run next command to create a container of spark-submit: `docker run --rm -it --network project-net --name spark-submit -v .:/opt/app bitnami/spark:3 /bin/bash`
     - Run next command to change directory for needed one: `cd /opt/app`
@@ -83,8 +84,38 @@ The result of this homework is:
 ### Results
 
 🔻 **Screenshots**  🔻
+- Data in cassandra tables (intermediate)
+![cassandra_table.png](screenshots/cassandra_table.png)
+- Kafka Consumer which is used by spark
+![kafka_con.png](screenshots/kafka_con.png)
+
+### Endpoints
+
+##### Precomputed:
+1) Return the aggregated statistics containing the number of transactions for each cryptocurrency for each hour in the last 6 hours, excluding the previous hour.<br>
+<b>Endpoint:</b> `http://127.0.0.1:1488/transactions/6-hours`
+![pre_1.png](screenshots/pre_1.png)
+2) Return the statistics about the total trading volume for each cryptocurrency for the last 6 hours, excluding the previous hour.<br>
+<b>Endpoint:</b> `http://127.0.0.1:1488/volume/6-hours`
+![pre_2.png](screenshots/pre_2.png)
+3) Return aggregated statistics containing the number of trades and their total volume for each hour in the last 12 hours, excluding the current hour. <br>
+<b>Endpoint:</b> `http://127.0.0.1:1488/total/12-hours`
+![pre_3.png](screenshots/pre_3.png)
+
+##### Ad_Hoc:
+1) Return the number of trades processed in a specific cryptocurrency in the last N minutes, excluding the last minute.<br>
+<b>Endpoint:</b> `http://127.0.0.1:1488/ETHUSD/trades/25`
+![ad_1.png](screenshots/ad_1.png)
+2) Return the top N cryptocurrencies with the highest trading volume in the last hour.<br>
+<b>Endpoint:</b> `http://127.0.0.1:1488/trades/hour/3`
+![ad_2.png](screenshots/ad_2.png) 
+3) Return the cryptocurrency’s current price for «Buy» and «Sell» sides based on its symbol. <br>
+<b>Endpoint:</b> `http://127.0.0.1:1488/DOGEUSD/price`
+![ad_3.png](screenshots/ad_3.png)
 
 
 ## 📌 Nota bene
 
-1) We recommend you to use [commands.txt](commands.txt) to copy all commands, it will be quite easier.
+1) We recommend you to use [commands.txt](commands.txt) to copy all commands, it will be a lot easier.
+2) Also, the data for table `currency_price_data` is artificial, since nor os our computer were able to process writing to three tables at the same time. The code for transforming the data for this third table is commented, but you can still check it out. It works if writing process to other tables is disabled. 
+3) We ran our code for 1.5 hour only before doing the screenshots. That is due to containers memory bound. I put the max value (8gb) in docker settings, but still, if run more than 1.5 hours, spark stops and cassandra container dies immediately with all written data inside.
