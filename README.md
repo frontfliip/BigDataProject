@@ -2,7 +2,7 @@
 
 Authors: 
 - **Liubomyr Mokrytskyi**
-- **Ivan Nickolaichenko**
+- **Ivan Nikolaichenko**
 
 ## 📝 Description
 
