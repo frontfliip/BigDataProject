@@ -16,6 +16,10 @@ docker run --rm -it --network project-net --name spark-submit-1 -v .:/opt/app bi
 cd /opt/app/DataExtraction
 spark-submit --conf spark.jars.ivy=/opt/app --packages "org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.0,com.datastax.spark:spark-cassandra-connector_2.12:3.0.0" --master spark://spark-worker:7077 --deploy-mode client --executor-memory 1G --total-executor-cores 2 transform.py
 
+#Start REST API
+.\RestAPI\start_api.sh
+docker run --name rest_api --network project-net -p 1488:1488 --log-driver=local --log-opt max-size=10m restapi
+
 
 
 
