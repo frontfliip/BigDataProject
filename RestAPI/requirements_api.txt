@@ -1,11 +1,4 @@
 pandas
-fastapi
 requests
-flask[async]
-Flask==2.1.1
-Werkzeug==2.2.2
+flask
 cassandra-driver
-uvicorn[standard]
-flask-swagger==0.2.14
-flask-swagger-ui==3.36.0
-
